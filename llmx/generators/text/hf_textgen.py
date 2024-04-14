@@ -7,7 +7,7 @@ import torch
 from .base_textgen import TextGenerator
 from ...datamodel import TextGenerationConfig, TextGenerationResponse
 from ...utils import cache_request, get_models_maxtoken_dict
-
+from ...inference import load_qwen_model_and_tokenizer
 
 @dataclass
 class DialogueTemplate:
@@ -92,7 +92,7 @@ class HFTextGenerator(TextGenerator):
     def __init__(self,
                  provider: str = "huggingface",
                  models: Dict = None,
-                 device_map=None, **kwargs):
+                 device_map="auto", **kwargs):
 
         super().__init__(provider=provider)
 
@@ -104,11 +104,7 @@ class HFTextGenerator(TextGenerator):
         self.device = kwargs.get("device", self.get_default_device())
 
         # load tokenizer and model
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            self.model_name, trust_remote_code=self.trust_remote_code)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_name, device_map=device_map, load_in_8bit=self.load_in_8bit,
-            trust_remote_code=self.trust_remote_code)
+        self.model, self.tokenizer = load_qwen_model_and_tokenizer()
         if not device_map:
             self.model.to(self.device)
         self.model.config.pad_token_id = self.tokenizer.pad_token_id
